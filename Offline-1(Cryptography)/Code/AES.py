@@ -659,6 +659,25 @@ def print_hex_array(hexArray):
     print()
 
 
+
+def convert_1D_bitvector_to_1D_hexarray(bitvector):
+
+    hexArray = []
+    for i in range(0, len(bitvector)):
+        hexArray.append(bitvector[i].getHexStringFromBitVector())
+    return hexArray
+
+
+def convert_1D_hexarray_to_1D_bitvector(hexArray):
+    '''
+    Converts the hex array to a bitvector
+    '''
+    bitvector = []
+    for i in range(0, len(hexArray)):
+        bitvector.append(BitVector(hexstring=hexArray[i]))
+    return bitvector
+
+
 def main():
     # key = string_to_hex_array("Thats my Kung Fu")
     # print(key)

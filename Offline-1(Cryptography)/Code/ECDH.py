@@ -62,7 +62,12 @@ def calculate_p(AES_length):
 
     # nextprime(num1) is the prime number which is larger than num1
     p = nextprime(num1)
-    print(p)
+    # print(p)
+    return p
+
+def set_p(new_p):
+    global p
+    p = new_p
 
 
 
