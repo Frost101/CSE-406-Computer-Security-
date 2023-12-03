@@ -4,7 +4,7 @@ import AES as AES
 import ECDH as ECDH
 
 
-PORT = 5000
+PORT = 5001
 
 # create a socket object
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

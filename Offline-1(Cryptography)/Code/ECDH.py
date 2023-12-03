@@ -1,4 +1,6 @@
 import math
+import time
+from prettytable import PrettyTable
 
 from sympy import nextprime
 import random
@@ -6,6 +8,49 @@ import random
 a = 2
 b = 2
 p = 17
+
+
+def mem_s_i(i, x):
+    return pow(x, (p - 1) >> i, p) == 1
+
+
+def tonelli_sqrt(c):
+    '''
+    :param c: an integer
+    p: an odd prime natural number
+    :return: the set of square roots of c modulo p
+    '''
+    if c % p == 0:
+        return set([0])
+    if not mem_s_i(1, c):
+        return set()
+
+    q = p - 1
+    ell = 0
+
+    while q % 2 == 0:
+        ell = ell + 1
+        q = q // 2
+
+    while True:
+        n = random.randrange(1, p)
+        if not mem_s_i(1, n):
+            break
+
+    # Now n is a quadratic non-residue modulo p
+    ninv = pow(n, p - 2, p)
+
+    e = 0
+
+    for i in range(2, ell + 1):
+        if not mem_s_i(i, pow(ninv, e)*c):
+            e = e + 2**(i - 1)
+
+    a = pow(pow(ninv, e, p)*c, (q + 1) // 2, p)
+
+    b = (pow(n, e//2, p) * a) % p
+
+    return set([b, p-b])
 
 
 
@@ -36,9 +81,11 @@ def caluculate_G():
     while True:
         x = random.randint(1, p - 1)
         tmp = (x ** 3 + a * x + b) % p
-        y = math.sqrt(tmp)
-        if y.is_integer():
-            return x, int(y)
+        y = tonelli_sqrt(tmp)
+        if(len(y) == 0):
+            continue
+        y = list(y)[0]
+        return x, int(y)
 
 
 def calculate_private_key():
@@ -46,7 +93,11 @@ def calculate_private_key():
     calculate the private key based on p
     '''
     global p
-    return random.randint(1, p - 1)
+    # hasse's theorem
+
+    lower_limit = int(p+1-2*math.sqrt(p))
+
+    return random.randint(1, lower_limit)
 
 
 def calculate_p(AES_length):
@@ -58,11 +109,12 @@ def calculate_p(AES_length):
     for i in range(2,AES_length,1):
         str1 = str1 + "0"
     str1 += "1"
+
     num1 = int(str1, 2)
 
     # nextprime(num1) is the prime number which is larger than num1
     p = nextprime(num1)
-    # print(p)
+
     return p
 
 def set_p(new_p):
@@ -116,22 +168,52 @@ def main():
     # res = calculate_public_key((5,1), 19)
     # print(res)
 
-    calculate_p(256)
-    x,y = caluculate_G()
+    table = PrettyTable()
+    table.field_names = ["k", "A", "B", "shared key R"]
 
-    private_key_1 = calculate_private_key()
-    private_key_2 = calculate_private_key()
+    length = [128, 192, 256]
+    for AES_length in length:
+        time_A = 0
+        time_B = 0
+        time_shared_key = 0
+        for j in range(5):
+            calculate_p(AES_length)
+            x, y = caluculate_G()
 
-    public_key_1 = calculate_public_key((x,y), private_key_1)
-    print("Public key 1: ", public_key_1)
-    public_key_2 = calculate_public_key((x,y), private_key_2)
-    print("Public key 2: ", public_key_2)
+            private_key_1 = calculate_private_key()
+            # print("Private key 1: ", private_key_1)
+            private_key_2 = calculate_private_key()
+            # print("Private key 2: ", private_key_2)
 
-    shared_key_1 = calculate_public_key(public_key_2, private_key_1)
-    shared_key_2 = calculate_public_key(public_key_1, private_key_2)
+            time_A_tmp = time.time()
+            public_key_1 = calculate_public_key((x, y), private_key_1)
+            time_A_tmp = (time.time() - time_A_tmp) * 1000
+            time_A += time_A_tmp
+            # print("Public key 1: ", public_key_1)
 
-    print("Shared key 1: ", shared_key_1)
-    print("Shared key 2: ", shared_key_2)
+            time_B_tmp = time.time()
+            public_key_2 = calculate_public_key((x, y), private_key_2)
+            time_B_tmp = (time.time() - time_B_tmp) * 1000
+            time_B += time_B_tmp
+            # print("Public key 2: ", public_key_2)
+
+            time_shared_key_tmp = time.time()
+            shared_key_1 = calculate_public_key(public_key_2, private_key_1)
+            time_shared_key_tmp = (time.time() - time_shared_key_tmp) * 1000
+            time_shared_key += time_shared_key_tmp
+
+            shared_key_2 = calculate_public_key(public_key_1, private_key_2)
+
+            # print("Shared key 1: ", shared_key_1)
+            # print("Shared key 2: ", shared_key_2)
+
+        table.add_row([AES_length, time_A/5, time_B/5, time_shared_key/5])
+
+
+    print("Computation time for:")
+    print(table)
+
+
 
 
 
