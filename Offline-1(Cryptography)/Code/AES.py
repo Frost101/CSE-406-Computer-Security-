@@ -1,8 +1,15 @@
+import random
+import time
 import BitVector as BitVector
 from BitVector import *
 
 roundsMap = {128: 10, 192: 12, 256: 14}
 AES_modulus = BitVector(bitstring='100011011')
+
+
+key_scheduling_time = 0.0
+encryption_time = 0.0
+decryption_time = 0.0
 
 Sbox = (
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -450,28 +457,53 @@ def AES_encrypt_helper(text, roundKeys, AES_length):
 
 
 
-def AES_encrypt(plaintext, keytext, AES_length):
+def AES_encrypt(plaintext, keytext, AES_length, IV):
     '''
     Encrypts the plaintext using the key
     '''
+    global key_scheduling_time
+    global encryption_time
 
     # Add padding to the plaintext if needed
-    text = add_padding_to_plaintext(plaintext, AES_length)
+    # text = add_padding_to_plaintext(plaintext, AES_length)
     # Convert the plaintext to hex array
-    text = string_to_hex_array(text)
+    text = string_to_hex_array(plaintext)
+    # add padding to the text
+    text = generalized_Padding(text)
 
     # Handle variable length key
     key = trims_or_pads_key(keytext, AES_length)
     # Generate all the round keys
-    roundKeys = key_expansion(key,AES_length)
+    key_scheduling_time = time.time()
+    roundKeys = key_expansion(key, AES_length)
+    key_scheduling_time = (time.time() - key_scheduling_time) * 1000
 
     # Encrypt the plaintext
     blocksize = 16
     ciphertext = []
+
+    # Preperaing IV
+    tem_IV= []
+    for i in range(0, len(IV)):
+        tem_IV.append(IV[i])
+
+    encryption_time = time.time()
     for i in range(0, len(text), blocksize):
-        tmp = (AES_encrypt_helper(text[i:i + blocksize], roundKeys, AES_length))
+        text_to_send = text[i:i + blocksize]
+
+        # CBC
+        # XOR with IV
+        for j in range(0, len(text_to_send)):
+            text_to_send[j] = (BitVector(hexstring=text_to_send[j]) ^ tem_IV[j]).getHexStringFromBitVector()
+
+        tmp = (AES_encrypt_helper(text_to_send, roundKeys, AES_length))
         for j in range(0, len(tmp)):
             ciphertext.append(tmp[j].get_hex_string_from_bitvector())
+
+        # Update IV
+        tem_IV = tmp
+
+    encryption_time = (time.time() - encryption_time) * 1000
     return ciphertext
 
 
@@ -522,10 +554,12 @@ def AES_decrypt_helper(ciphertext, roundKeys, AES_length):
 
 
 
-def AES_decrypt(ciphertext, keytext, AES_length):
+def AES_decrypt(ciphertext, keytext, AES_length, IV):
     '''
     Decrypts the ciphertext using the key
     '''
+    global decryption_time
+
     # Handle variable length key
     key = trims_or_pads_key(keytext, AES_length)
     # Generate all the round keys
@@ -534,11 +568,39 @@ def AES_decrypt(ciphertext, keytext, AES_length):
     # Decrypt the ciphertext
     blocksize = 16
     plaintext = []
+
+    temp_IV= []
+    for i in range(0, len(IV)):
+        temp_IV.append(IV[i])
+
+    decryption_time = time.time()
     for i in range(0, len(ciphertext), blocksize):
+        next_IV = []
+        for j in range(0, len(ciphertext[i:i + blocksize])):
+            next_IV.append(BitVector(hexstring=ciphertext[i:i + blocksize][j]))
+
+
         tmp = (AES_decrypt_helper(ciphertext[i:i + blocksize], roundKeys, AES_length))
+
+        # CBC
+        # XOR with IV
+        for j in range(0, len(tmp)):
+            tmp[j] = tmp[j] ^ temp_IV[j]
+
+        # Update IV
+        temp_IV = []
+        for j in range(0, len(next_IV)):
+            temp_IV.append(next_IV[j])
+
         for j in range(0, len(tmp)):
             plaintext.append(tmp[j].get_hex_string_from_bitvector())
-    plaintext = hex_array_to_string(plaintext)
+
+    decryption_time = (time.time() - decryption_time) * 1000
+    # # Remove padding
+    # plaintext = generalized_unPadding(plaintext)
+    #
+    # # Convert the hex array to a string
+    # plaintext = hex_array_to_string(plaintext)
     return plaintext
 
 
@@ -554,6 +616,49 @@ def hex_array_to_string(hex_array):
 
 
 
+def IV_generator():
+    '''
+    Generates a random IV
+    '''
+    IV = []
+    for i in range(0, 16):
+        IV.append(BitVector(intVal=random.randint(0, 255), size=8))
+    return IV
+
+
+def generalized_Padding(hexArray):
+    '''
+    :param hexArray: hexarray of plaintext
+    :return:
+    '''
+    blocksize = 16
+    padding_size = 16 - (len(hexArray) % blocksize)
+    for i in range(0, padding_size):
+        hexArray.append(hex(padding_size)[2:])
+    return hexArray
+
+
+def generalized_unPadding(hexArray):
+    '''
+    :param hexArray: hexarray of plaintext
+    :return:
+    '''
+    blocksize = 16
+    padding_size = int(hexArray[-1], 16)
+    for i in range(0, padding_size):
+        hexArray.pop()
+    return hexArray
+
+
+def print_hex_array(hexArray):
+    '''
+    Prints the hex array
+    '''
+    for i in range(0, len(hexArray)):
+        print(hexArray[i], end=" ")
+    print()
+
+
 def main():
     # key = string_to_hex_array("Thats my Kung Fu")
     # print(key)
@@ -567,16 +672,69 @@ def main():
     # print(trims_or_pads_key("Thats my Kung Fuck", 128))
     # print(add_padding_to_plaintext("Two One Nine Two", 128))
 
+    # IV = IV_generator()
+    # ciphertext = AES_encrypt("Two One Nine twoo", "Thats my Kung Fuuuu", 192, IV)
+    # print(ciphertext)
+    # plaintext = AES_decrypt(ciphertext, "Thats my Kung Fuuuu", 192, IV)
+    # print(plaintext)
 
 
-    ciphertext = AES_encrypt("Two One Nine Two", "Thats my Kung Fuuu", 128)
-    print(ciphertext)
-    plaintext = AES_decrypt(ciphertext, "Thats my Kung Fuuu", 128)
-    print(plaintext)
-
+    # hexArray = string_to_hex_array("Two One Tine Two1")
+    # hexArray = generalized_Padding(hexArray)
+    # print(hexArray)
+    # hexArray = generalized_unPadding(hexArray)
+    # print(hexArray)
 
     # key = trims_or_pads_key("Thats my Kung Fu",128)
     # key_expansion(key,128)
+
+    AES_length = 192
+
+    key = "BUET CSE19 Batch"
+    print("Key:")
+    print("In ASCII:", end=" ")
+    print(key)
+    padded_key = trims_or_pads_key(key, AES_length)
+    hexKey = string_to_hex_array(key)
+    print("In HEX", end=" ")
+    print_hex_array(hexKey)
+    print()
+
+    text = "Never Gonna Give you up"
+    print("Plain Text:")
+    print("In ASCII:", end=" ")
+    print(text)
+    hexText = string_to_hex_array(text)
+    hexTextWithPadding = generalized_Padding(hexText)
+    print("In HEX:", end=" ")
+    print_hex_array(hexTextWithPadding)
+    print()
+
+
+    IV = IV_generator()
+    ciphered_hex_array = AES_encrypt(text, key, AES_length, IV)
+    print("Ciphered Text:")
+    print("In HEX:", end=" ")
+    print_hex_array(ciphered_hex_array)
+    print("In ASCII:", end=" ")
+    print(hex_array_to_string(ciphered_hex_array))
+    print()
+
+
+    deciphered_hex_array = AES_decrypt(ciphered_hex_array, key, AES_length, IV)
+    print("Deciphered Text:")
+    print("In HEX:", end=" ")
+    print_hex_array(deciphered_hex_array)
+    deciphered_hex_array = generalized_unPadding(deciphered_hex_array)
+    print("In ASCII:", end=" ")
+    print(hex_array_to_string(deciphered_hex_array))
+    print()
+
+    print("Execution Time Details:")
+    print(f"Key Generation Time: {key_scheduling_time:.4f} ms")
+    print(f"Encryption Time: {encryption_time:.4f} ms")
+    print(f"Decryption Time: {decryption_time:.4f} ms")
+
 
 
 
