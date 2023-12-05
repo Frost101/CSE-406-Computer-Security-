@@ -679,37 +679,13 @@ def convert_1D_hexarray_to_1D_bitvector(hexArray):
 
 
 def main():
-    # key = string_to_hex_array("Thats my Kung Fu")
-    # print(key)
-    # t = convert_to_2D_array(key)
-    # for i in range(0, len(t)):
-    #     for j in range(0, len(t[0])):
-    #         print(t[i][j].getHexStringFromBitVector(), end=" ")
-    # keys = key_generation("Thats my Kung Fu")
-    # print_all_round_keys(keys)
-    # print(len(keys))
-    # print(trims_or_pads_key("Thats my Kung Fuck", 128))
-    # print(add_padding_to_plaintext("Two One Nine Two", 128))
 
-    # IV = IV_generator()
-    # ciphertext = AES_encrypt("Two One Nine twoo", "Thats my Kung Fuuuu", 192, IV)
-    # print(ciphertext)
-    # plaintext = AES_decrypt(ciphertext, "Thats my Kung Fuuuu", 192, IV)
-    # print(plaintext)
-
-
-    # hexArray = string_to_hex_array("Two One Tine Two1")
-    # hexArray = generalized_Padding(hexArray)
-    # print(hexArray)
-    # hexArray = generalized_unPadding(hexArray)
-    # print(hexArray)
-
-    # key = trims_or_pads_key("Thats my Kung Fu",128)
-    # key_expansion(key,128)
 
     AES_length = 192
-
     key = "BUET CSE19 Batch"
+    text = "Never Gonna Give you up"
+
+
     print("Key:")
     print("In ASCII:", end=" ")
     print(key)

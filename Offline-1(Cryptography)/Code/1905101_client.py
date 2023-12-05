@@ -1,10 +1,14 @@
 import socket
 import pickle
-import AES as AES
-import ECDH as ECDH
+import importlib
+
+AES = importlib.import_module("1905101_AES")
+ECDH = importlib.import_module("1905101_ECDH")
 
 
-PORT = 5001
+
+PORT = 5000
+AES_length = 256
 
 # create a socket object
 clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,10 +20,10 @@ clientsocket.connect(('127.0.0.1', PORT))
 data = clientsocket.recv(1024).decode()
 print(f"received data: {data}")
 # send AES length to the server
-AES_length = 128
 clientsocket.send(str(AES_length).encode())
 print(f"sent AES length: {AES_length}")
 print()
+
 
 # send p to the server
 data = clientsocket.recv(1024).decode()
@@ -28,6 +32,24 @@ p = ECDH.calculate_p(AES_length)
 clientsocket.send(str(p).encode())
 print(f"sent p: {p}")
 print()
+
+
+
+# send a and b to the server
+ECDH.calculate_a_b()
+data = clientsocket.recv(1024).decode()
+print(f"received data: {data}")
+tmp_a = ECDH.get_a()
+clientsocket.send(str(tmp_a).encode())
+print(f"sent a: {tmp_a}")
+data = clientsocket.recv(1024).decode()
+print(f"received data: {data}")
+tmp_b = ECDH.get_b()
+clientsocket.send(str(tmp_b).encode())
+print(f"sent b: {tmp_b}")
+print()
+
+
 
 # send G_x to the server
 data = clientsocket.recv(1024).decode()

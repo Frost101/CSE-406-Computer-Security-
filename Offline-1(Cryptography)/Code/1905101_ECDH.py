@@ -9,10 +9,38 @@ a = 2
 b = 2
 p = 17
 
+def calculate_a_b():
+    '''
+    calculate the a and b based on p
+    '''
+    global p
+    global a
+    global b
+    while True:
+        tmp_a = random.randint(1, p - 1)
+        tmp_b = random.randint(1, p - 1)
+        if 4 * a ** 3 + 27 * b ** 2 != 0:
+            a = tmp_a
+            b = tmp_b
+            break
 
-def mem_s_i(i, x):
+
+
+def mem_si(i, x):
     return pow(x, (p - 1) >> i, p) == 1
 
+
+def set_a_b(a1, b1):
+    global a
+    global b
+    a = a1
+    b = b1
+
+def get_a():
+    return a
+
+def get_b():
+    return b
 
 def tonelli_sqrt(c):
     '''
@@ -22,7 +50,7 @@ def tonelli_sqrt(c):
     '''
     if c % p == 0:
         return set([0])
-    if not mem_s_i(1, c):
+    if not mem_si(1, c):
         return set()
 
     q = p - 1
@@ -34,23 +62,21 @@ def tonelli_sqrt(c):
 
     while True:
         n = random.randrange(1, p)
-        if not mem_s_i(1, n):
+        if not mem_si(1, n):
             break
-
-    # Now n is a quadratic non-residue modulo p
-    ninv = pow(n, p - 2, p)
+    ninverse = pow(n, p - 2, p)
 
     e = 0
 
     for i in range(2, ell + 1):
-        if not mem_s_i(i, pow(ninv, e)*c):
+        if not mem_si(i, pow(ninverse, e)*c):
             e = e + 2**(i - 1)
 
-    a = pow(pow(ninv, e, p)*c, (q + 1) // 2, p)
+    A = pow(pow(ninverse, e, p)*c, (q + 1) // 2, p)
 
-    b = (pow(n, e//2, p) * a) % p
+    B = (pow(n, e//2, p) * A) % p
 
-    return set([b, p-b])
+    return set([B, p-B])
 
 
 
@@ -97,7 +123,7 @@ def calculate_private_key():
 
     lower_limit = int(p+1-2*math.sqrt(p))
 
-    return random.randint(1, lower_limit)
+    return random.randint(2, lower_limit-1)
 
 
 def calculate_p(AES_length):
@@ -147,7 +173,6 @@ def addition(point1, point2):
 
 
 def calculate_public_key(G, k):
-
     tmp = G
     res = (0,0)
     while(k > 0):
@@ -160,14 +185,9 @@ def calculate_public_key(G, k):
 
 
 def main():
-    global p
-    # calculate_p(128)
-    # x,y = caluculate_G()
-    # print(x," ",y)
-    # x,y  = addition((6,3), (9,16))
-    # res = calculate_public_key((5,1), 19)
-    # print(res)
 
+
+    global p
     table = PrettyTable()
     table.field_names = ["k", "A", "B", "shared key R"]
 
@@ -178,6 +198,7 @@ def main():
         time_shared_key = 0
         for j in range(5):
             calculate_p(AES_length)
+            calculate_a_b()
             x, y = caluculate_G()
 
             private_key_1 = calculate_private_key()
@@ -212,6 +233,7 @@ def main():
 
     print("Computation time for:")
     print(table)
+
 
 
 

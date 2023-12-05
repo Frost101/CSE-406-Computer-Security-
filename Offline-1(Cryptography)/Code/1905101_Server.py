@@ -1,10 +1,13 @@
 import socket
 import pickle
-import AES as AES
-import ECDH as ECDH
+import importlib
+AES = importlib.import_module("1905101_AES")
+ECDH = importlib.import_module("1905101_ECDH")
 
 
-PORT = 5001
+
+PORT = 5000
+message = "Never gonna give you up, never gonna let you down"
 
 # create a socket object
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -25,16 +28,29 @@ while True:
     print(f"Got a connection from {addr}")
     print()
 
-    # send a thank you message to the client.
+
     clientsocket.send(b"Send AES length")
     AES_length = int(clientsocket.recv(1024).decode())
     print(f" received AES length: {AES_length}")
     print()
 
+
+
     clientsocket.send(b"Send p")
     p = int(clientsocket.recv(1024).decode())
     print(f"p: {p}")
     ECDH.set_p(p)
+
+    # ask for a and b
+    clientsocket.send(b"Send a")
+    tmp_a = int(clientsocket.recv(1024).decode())
+    print(f"received a: {tmp_a}")
+    clientsocket.send(b"Send b")
+    tmp_b = int(clientsocket.recv(1024).decode())
+    print(f"received b: {tmp_b}")
+    print()
+    ECDH.set_a_b(tmp_a, tmp_b)
+
 
     clientsocket.send(b"Send G_x")
     G_x = int(clientsocket.recv(1024).decode())
@@ -78,7 +94,6 @@ while True:
     print()
 
     # send encrypted message to the client
-    message = "Never gonna give you up, never gonna let you down"
     print(f"sent message: {message}")
     encrypted_message = AES.AES_encrypt(message, str(shared_key[0]), AES_length, IV)
     print(f"sent encrypted_message: {encrypted_message}")
