@@ -7,8 +7,8 @@ ECDH = importlib.import_module("1905101_ECDH")
 
 
 
-PORT = 5000
-AES_length = 256
+PORT = 5002
+AES_length = 128
 
 # create a socket object
 clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -106,7 +106,7 @@ encrypted_message = data
 print()
 
 # decrypt the message
-decrypted_message = AES.AES_decrypt(encrypted_message, str(shared_key[0]), AES_length, IV)
+decrypted_message = AES.AES_decrypt_ECDH(encrypted_message, shared_key[0], AES_length, IV)
 decrypted_message = AES.generalized_unPadding(decrypted_message)
 decrypted_message = AES.hex_array_to_string(decrypted_message)
 print(f"decrypted message: {decrypted_message}")

@@ -93,6 +93,19 @@ def convert_to_2D_array(array):
     return array
 
 
+def convert_to_2D_array_from_bitVector(array):
+    temp_array = []
+    for i in range(0, len(array), 8):
+        temp_array.append(array[i:i+8])
+
+
+    temp_array2 = []
+    for i in range(0, len(temp_array), 4):
+        temp_array2.append(temp_array[i:i + 4])
+
+    return temp_array2
+
+
 def convert_to_2D_array_key(array):
     '''
     Converts a 1D hex array to a 2D array
@@ -211,14 +224,18 @@ def print_all_round_keys(keys):
 
 
 
-def key_expansion(key, AES_length):
+def key_expansion(key, AES_length, isKeyInt=False):
     '''
         Takes in a padded/trimmed key and
         Generates all the round keys
     '''
     n = len(key)
-    key = string_to_hex_array(key)
-    key = convert_to_2D_array_key(key)
+
+    if isKeyInt:
+        key = convert_to_2D_array_from_bitVector(key)
+    else:
+        key = string_to_hex_array(key)
+        key = convert_to_2D_array_key(key)
 
     keys = []
 
@@ -343,6 +360,21 @@ def trims_or_pads_key(key, AES_length):
     else:
         while len(key) < (AES_length // 8):
             key += "0"
+        return key
+
+
+def trims_or_pads_key_ECDH(key, AES_length):
+    '''
+    Trims or pads the key to make it of the required length
+    Here param "key" is a bit vector
+    '''
+    key = BitVector(intVal=key)
+    if len(key) == (AES_length):
+        return key
+    elif len(key) > (AES_length):
+        return key[:(AES_length)]
+    else:
+        key.pad_from_right(AES_length - len(key))
         return key
 
 
@@ -507,6 +539,61 @@ def AES_encrypt(plaintext, keytext, AES_length, IV):
     return ciphertext
 
 
+
+def AES_encrypt_ECDH(plaintext, keyInt, AES_length, IV):
+    '''
+    Encrypts the plaintext using the key
+    '''
+    global key_scheduling_time
+    global encryption_time
+
+    # Add padding to the plaintext if needed
+    # text = add_padding_to_plaintext(plaintext, AES_length)
+    # Convert the plaintext to hex array
+    text = string_to_hex_array(plaintext)
+    # add padding to the text
+    text = generalized_Padding(text)
+
+    # Handle variable length key
+    key = trims_or_pads_key_ECDH(keyInt, AES_length)
+    # Generate all the round keys
+    key_scheduling_time = time.time()
+    roundKeys = key_expansion(key, AES_length, True)
+    key_scheduling_time = (time.time() - key_scheduling_time) * 1000
+
+
+    # Encrypt the plaintext
+    blocksize = 16
+    ciphertext = []
+
+    # Preperaing IV
+    tem_IV= []
+    for i in range(0, len(IV)):
+        tem_IV.append(IV[i])
+
+    encryption_time = time.time()
+    for i in range(0, len(text), blocksize):
+        text_to_send = text[i:i + blocksize]
+
+        # CBC
+        # XOR with IV
+        for j in range(0, len(text_to_send)):
+            text_to_send[j] = (BitVector(hexstring=text_to_send[j]) ^ tem_IV[j]).getHexStringFromBitVector()
+
+        tmp = (AES_encrypt_helper(text_to_send, roundKeys, AES_length))
+        for j in range(0, len(tmp)):
+            ciphertext.append(tmp[j].get_hex_string_from_bitvector())
+
+        # Update IV
+        tem_IV = tmp
+
+    encryption_time = (time.time() - encryption_time) * 1000
+    return ciphertext
+
+
+
+
+
 def AES_decrypt_helper(ciphertext, roundKeys, AES_length):
     '''
     :param ciphertext: 1D array of hex values of ciohertext
@@ -602,6 +689,59 @@ def AES_decrypt(ciphertext, keytext, AES_length, IV):
     # # Convert the hex array to a string
     # plaintext = hex_array_to_string(plaintext)
     return plaintext
+
+
+
+def AES_decrypt_ECDH(ciphertext, keyINT, AES_length, IV):
+    '''
+    Decrypts the ciphertext using the key
+    '''
+    global decryption_time
+
+    # Handle variable length key
+    key = trims_or_pads_key_ECDH(keyINT, AES_length)
+    # Generate all the round keys
+    roundKeys = key_expansion(key,AES_length, True)
+
+    # Decrypt the ciphertext
+    blocksize = 16
+    plaintext = []
+
+    temp_IV= []
+    for i in range(0, len(IV)):
+        temp_IV.append(IV[i])
+
+    decryption_time = time.time()
+    for i in range(0, len(ciphertext), blocksize):
+        next_IV = []
+        for j in range(0, len(ciphertext[i:i + blocksize])):
+            next_IV.append(BitVector(hexstring=ciphertext[i:i + blocksize][j]))
+
+
+        tmp = (AES_decrypt_helper(ciphertext[i:i + blocksize], roundKeys, AES_length))
+
+        # CBC
+        # XOR with IV
+        for j in range(0, len(tmp)):
+            tmp[j] = tmp[j] ^ temp_IV[j]
+
+        # Update IV
+        temp_IV = []
+        for j in range(0, len(next_IV)):
+            temp_IV.append(next_IV[j])
+
+        for j in range(0, len(tmp)):
+            plaintext.append(tmp[j].get_hex_string_from_bitvector())
+
+    decryption_time = (time.time() - decryption_time) * 1000
+    # # Remove padding
+    # plaintext = generalized_unPadding(plaintext)
+    #
+    # # Convert the hex array to a string
+    # plaintext = hex_array_to_string(plaintext)
+    return plaintext
+
+
 
 
 def hex_array_to_string(hex_array):

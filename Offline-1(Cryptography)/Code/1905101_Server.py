@@ -1,12 +1,15 @@
 import socket
 import pickle
 import importlib
+
+from BitVector import BitVector
+
 AES = importlib.import_module("1905101_AES")
 ECDH = importlib.import_module("1905101_ECDH")
 
 
 
-PORT = 5000
+PORT = 5002
 message = "Never gonna give you up, never gonna let you down"
 
 # create a socket object
@@ -95,7 +98,10 @@ while True:
 
     # send encrypted message to the client
     print(f"sent message: {message}")
-    encrypted_message = AES.AES_encrypt(message, str(shared_key[0]), AES_length, IV)
+
+    temp_bitvector = BitVector(intVal=shared_key[0], size=AES_length)
+
+    encrypted_message = AES.AES_encrypt_ECDH(message, shared_key[0], AES_length, IV)
     print(f"sent encrypted_message: {encrypted_message}")
     encrypted_message = pickle.dumps(encrypted_message)
     clientsocket.sendall(encrypted_message)
