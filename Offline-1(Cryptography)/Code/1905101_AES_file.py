@@ -701,8 +701,8 @@ def main():
     IV = IV_generator()
 
 
-    input_file = 'input.txt'
-    output_file = 'output.txt'
+    input_file = '1905101.jpg'
+    output_file = 'out.jpg'
 
     fd = open(input_file, 'rb')
     file_contents = fd.read()

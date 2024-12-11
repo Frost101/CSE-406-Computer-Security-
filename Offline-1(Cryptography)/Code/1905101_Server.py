@@ -9,7 +9,7 @@ ECDH = importlib.import_module("1905101_ECDH")
 
 
 
-PORT = 5002
+PORT = 5003
 message = "Never gonna give you up, never gonna let you down"
 
 # create a socket object

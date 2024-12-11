@@ -7,7 +7,7 @@ ECDH = importlib.import_module("1905101_ECDH")
 
 
 
-PORT = 5002
+PORT = 5003
 AES_length = 128
 
 # create a socket object

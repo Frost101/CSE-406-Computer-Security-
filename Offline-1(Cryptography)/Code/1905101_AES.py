@@ -239,6 +239,7 @@ def key_expansion(key, AES_length, isKeyInt=False):
 
     keys = []
 
+
     # print_2D_bitVector_array(keys)
 
     # Round constant initialization
@@ -515,7 +516,7 @@ def AES_encrypt(plaintext, keytext, AES_length, IV):
     ciphertext = []
 
     # Preperaing IV
-    tem_IV= []
+    tem_IV = []
     for i in range(0, len(IV)):
         tem_IV.append(IV[i])
 
@@ -835,7 +836,7 @@ def main():
     print_hex_array(hexKey)
     print()
 
-    text = "Never Gonna Give you up"
+    # text = "Never Gonna Give you up"
     print("Plain Text:")
     print("In ASCII:", end=" ")
     print(text)
